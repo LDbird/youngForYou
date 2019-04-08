@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    .box {
+      margin: 30px auto;
+      padding-top: 20px;
+      width: 300px;
+      height: 300px;
+      border: 1px solid #00b38a;
+      text-align: center;
+    }
+    .box input, .box button {
+      padding: 3px 5px;
+      line-height: 30px;
+    }
+    .box input.err {
+      border: 1px solid red;
+    }
+  </style>
+</head>
+<body>
+<div id="box" class="box">
+  年龄：<input type="text" id="age" placeholder="请输入18-65之间的年龄">
+  <button id="btn">验证</button>
+</div>
+
+<script>
+  let ageInput = document.getElementById('age');
+  let btn = document.getElementById('btn');
+  let reg= /^((1[89])|([2-5]\d)|(6[0-5]))$/;
+  ageInput.onblur = function () {
+    let value = this.value;
+    reg.test(value) ? alert('输入合法') : alert('本注册功能仅对18-65的人开放')
+  }
+  // btn.onclick = function () {
+  //   let value = ageInput.value;
+  //   reg.test(value) ? alert('输入合法') : alert('本注册功能仅对18-65的人开放')
+  // }
+
+</script>
+</body>
+</html>
