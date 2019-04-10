@@ -128,6 +128,31 @@ let outer = document.getElementById('outer');
 // 2. 获取当前元素所有经过浏览器计算的样式
 // > 经过计算的样式：只要当前元素可以在页面中呈现（或者浏览器渲染它了），那么它的样式都是被计算过的。
 // => 不管样式写在哪里
+// => 不管你是否写了（浏览器会给元素设置一些默认样式）
+
+/*
+* 标准浏览器你（IE9+）
+*   window.getComputed([元素], [伪类, 一般都写null]) 获取到当前元素被所有浏览器计算过的样式（对象）
+*
+* IE6~8
+*   [元素].currentStyle 获取经过计算的样式
+*
+*
+* */
+
+let getCss = function (curEle, attr) {
+  if ('getComputedStyle' in window) {
+    let val = window.getComputedStyle(curEle, null)[attr];
+
+    // => 把获取的结果去除单位（不是所有的值都能去单位的，例如display\一些复合值都去不掉单位），只有符合数字 + 单位 这种模式的结果才能基于parseFloat去单位
+    let reg = /^-?\d+(\.\d+)?(px|rem|em|pt)?$/i;
+    val = reg.test(val) ? parseFloat(val) : val;
+    return val
+  }
+  throw new SyntaxError('您的浏览器版本过低，请升级浏览器')
+};
+
+console.log(getCss(outer, 'width'));
 
 
 
