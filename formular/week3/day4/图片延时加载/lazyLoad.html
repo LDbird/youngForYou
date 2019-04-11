@@ -3,6 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<title>延时加载</title>
+	<style>
+		p {
+			height: 1500px;
+			border: 2px solid black;
+		}
+	</style>
 </head>
 <body>
 <div id="box">
@@ -14,8 +20,18 @@
 <script>
 	let img = document.getElementById('img');
 	let btn = document.getElementById('btn');
+	// 点击时加载
 	btn.onclick = function () {
 		img.src = img.getAttribute('data-src')
+	};
+	// 滚动式加载
+	window.onscroll = function () {
+		let imgOffsetTop = img.offsetTop;
+		let winSctp = document.documentElement.scrollTop;
+		let winH = document.documentElement.clientHeight;
+		if (imgOffsetTop - winSctp - winH <= 0) {
+			img.src = img.getAttribute('data-src');
+		}
 	}
 </script>
 </body>
