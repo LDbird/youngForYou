@@ -1,12 +1,15 @@
 let flowRender = (function () {
   // 获取元素
   let list = document.getElementById('flowBox');
-  let flowList = document.getElementsByTagName('li');
+  let flowList = list.getElementsByTagName('li');
+  let isRun = false;
+  let page = 0;
 
   // 获取数据
   let queryData = function () {
+    page++;
     let xhr = new XMLHttpRequest();
-    xhr.open('GET', 'json/data.json', false);
+    xhr.open('GET', `json/data.json?page=${page}`, false);
     xhr.onreadystatechange = function () {
       if (+xhr.readyState === 4 && +xhr.status === 200) {
         let data = JSON.parse(xhr.responseText);
@@ -55,17 +58,23 @@ let flowRender = (function () {
         item
           ? flowListAry[index].innerHTML += queryHMTL(item)
           : null;
-      })
+      });
+      isRun = false
     }
   };
 
   // 加载更多
   let loadMore = function () {
+    if (isRun) return;
+    if (page >= 10) {
+
+    }
     let winH = document.documentElement.clientHeight;
     let pageH = document.documentElement.offsetHeight;
     let winScrlTop = document.documentElement.scrollTop;
 
     if ((pageH - winScrlTop - winH) <= 300) {
+      isRun = true;
       queryData();
     }
   };

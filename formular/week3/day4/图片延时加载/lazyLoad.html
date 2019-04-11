@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>延时加载</title>
+</head>
+<body>
+<div id="box">
+	<p>点击时才加载图片</p>
+	<img data-src="./img/1.jpg" title="我是张图片" id="img">
+	<button id="btn">点击加载</button>
+</div>
+
+<script>
+	let img = document.getElementById('img');
+	let btn = document.getElementById('btn');
+	btn.onclick = function () {
+		img.src = img.getAttribute('data-src')
+	}
+</script>
+</body>
+</html>
