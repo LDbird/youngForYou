@@ -58,7 +58,7 @@ let flowRender = (function () {
         data[i + 1],
         data[i + 2]
       ];
-      let result = await fetchImg(dataArr);
+      let result = await fetchImg(dataArr); // 使用await将异步变成同步
       Array.from(flowList).sort(
         (a, b) => a.getAttribute('data-height') - b.getAttribute('data-height')
       ).forEach((li, liIndex) => {
@@ -68,21 +68,8 @@ let flowRender = (function () {
         }
       });
       isRun = false;
-      // fetchImg(dataArr).then((result) => {
-      //   // 给三列排序
-      //   Array.from(flowList).sort(
-      //     (a, b) => a.getAttribute('data-height') - b.getAttribute('data-height')
-      //   ).forEach((li, liIndex) => {
-      //     if (dataArr[liIndex]) {
-      //       li.innerHTML += queryHTML(dataArr[liIndex]);
-      //       li.setAttribute('data-height', +li.getAttribute('data-height') + result[liIndex])
-      //     }
-      //   });
-      //   isRun = false;
-      //   lazyLoad()
-      // });
     }
-    lazyLoad();
+    lazyLoad(); // 每次绑定数据完成后主动触发一次加载图片
   }
 
   // 3. 拼接模板字符串
