@@ -32,3 +32,9 @@
 .tabBox div.active {
   display: block;
 }
+
+.animate {
+  height: 100px;
+  text-align: center;
+  background: greenyellow;
+}
