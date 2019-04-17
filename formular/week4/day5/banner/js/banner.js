@@ -72,7 +72,7 @@ let bannerRender = (function () {
     //到这里我们发现在stepIndex从0到4都正常轮播，但是当stepIndex变成5以后，就没有了。这是因为什么？因为stepIndex代表的是将要展示的图片索引。而这里图片的最大索引就是4（因为wrapper下有5个slider，其中最后一个是我们复制出来的第一张图）。到4说明就到最后一张了，如果再轮播就要播放第二张了。为了实现无缝轮播，当播放到最后一张后，stepIndex++就等于$slideList的length了，如果stepIndex >= $slideList.length 【因为$slideList下一共就5个，最大索引就是4啊~】，我们就把stepIndex设置成1【1是第二张图片的索引啊~】，同时把$wrapper的left值设置为0。
     if (stepIndex >= $slideList.length) {
       stepIndex = 1;
-      $wrapper.css({
+      $wrapper.finish().css({
         left: 0
       })
     }
@@ -145,7 +145,7 @@ let bannerRender = (function () {
 
 
   // handleFocus 点击焦点切换轮播图；我们发现焦点的索引就是当前轮播的图片索引，所以我们直接将stepIndex设置为当前焦点的索引，并且让wrapper的left值动画到这个索引对应的值，
-  function handleFocus() {
+  function handleFocus()  {
     $focusList.on('click', function () {
       let focusIndex = $(this).index();
       stepIndex = focusIndex; //
