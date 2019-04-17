@@ -1,178 +1,179 @@
+
 let bannerRender = (function () {
-  // -> 获取后续需要操作的对象或者元素
-  let container = $('#container'),
-    wrapper = $('.wrapper'),
-    focus = $('.focus'),
-    arrowLeft = $('.arrowLeft'),
-    arrowRight = $('.arrowRight'),
-    slideList = null,
-    focusList = null;
+  // 获取元素：
+  let $container = $('#container'),
+    $wrapper = $('.wrapper'),
+    $focus = $('.focus'),
+    $arrowLeft = $('.arrowLeft'),
+    $arrowRight = $('.arrowRight'),
+    $slideList = null,
+    $focusList = null;
 
-  // => 轮播图运动的基础参数
-  let stepIndex = 0; // stepIndex 记录当前展示块的索引
-  let autoTimer = null; // autoTimer 自动轮播的定时器
-  let interval = 3000; // interval 间隔多长时间自动切换
+  // 轮播图基础参数
+  let stepIndex = 0; // 记录当前要显示的图片的索引
+  let autoTimer = null; // 记录自动轮播定时器id（因为我们后面还要鼠标放上去的时候停止轮播，停止轮播需要清除定时器，而清除定时器需要知道定时器id）
+  let interval = 3000; // 自动轮播间隔，3000只是一个默认值，根据真实项目的需求调整；
 
-  // autoMove：控制轮播图的运动和切换
-  /*
-  * 索引为1，展示第二张，warpper 的left - 1000;
-  * 索引为2， 展示第三章，wrapper的left - 2000；
-  * ....
-  * warpper的left值其实就是当前要展示的图片索引对应的结果 ：-索引 * 1000
-  *
-  *
-  * */
+  // queryData 获取数据
+  function queryData(successFn, errorFn) {
+    $.ajax({
+      method: 'GET',
+      url: 'json/banner.json',
+      async: false,
+      dataType: 'json',
+      success: function (data) {
+        // 这里就已经拿到数据了，data就是我们从服务端拿到的数据，并且jquery已经帮我们处理成对象了
+        // 思考：我们在这里是不是就可以执行绑定数据的操作了
+        successFn(data)
+      },
+      error: errorFn
+    })
+  }
+
+  // bindHTML 绑定数据
+  function bindHTML(data) {
+    // 1. 设置slideStr、focusStr空字符串
+    let slideStr = ``; // wrapper里面的图片
+    let focusStr = ``; // 轮播图下面的小点点
+
+    // 2. 遍历数据，拼接图片和焦点
+    data.forEach((item, index) => {
+      let {img, desc} = item;
+      slideStr += `<div class="slide">
+<img src="${img}" alt="${desc}">
+</div>`;
+      focusStr += `<li class="${index === 0 ? 'active' : ''}"></li>`
+      // 默认第一个焦点时选中的，所以当index为0时表示第一个焦点
+    });
+
+    // 3. 为了实现无缝拼接，还需要把wrapper下的第一张图片复制一份到容器末尾，所以我们这里需要在slideStr末尾多拼接一份第一个
+    slideStr += `<div class="slide">
+<img src="${data[0].img}" alt="${data[0].desc}">
+</div>`;
+
+    // 4. 插入页面内
+    $wrapper.html(slideStr);
+    $focus.html(focusStr);
+
+    // 5. 因为我们说jq获取的元素时静态集合，所以需要在绑定数据后再获取wrapper下的图片集合以及轮播图上的小焦点集合
+    $slideList = $('.wrapper .slide');
+    $focusList = $('.focus > li');
+
+    // 6. 动态计算wrapper的宽度，$slideList有多少个，wrapper的宽度就应该有多少个图片的宽度（每个图片宽1000）
+    $wrapper.css({
+      width: $slideList.length * 1000
+    })
+  }
+
+  // autoMove 控制轮播图自动轮播
   function autoMove() {
+    // 1. 因为stepIndex记录的是当前展示的图片，所以轮播下一张需要先给stepIndex++
     stepIndex++;
-    if (stepIndex >= slideList.length) {
-      // 说明再往后切换没有了，现在展示的是克隆的第一张，此时我们将wrapper设置到回到真实的第一张的位置，即left = 0，然后stepIndex = 1，这样就可以切换到第二张了
-      wrapper.css('left', 0);
+    //到这里我们发现在stepIndex从0到4都正常轮播，但是当stepIndex变成5以后，就没有了。这是因为什么？因为stepIndex代表的是将要展示的图片索引。而这里图片的最大索引就是4（因为wrapper下有5个slider，其中最后一个是我们复制出来的第一张图）。到4说明就到最后一张了，如果再轮播就要播放第二张了。为了实现无缝轮播，当播放到最后一张后，stepIndex++就等于$slideList的length了，如果stepIndex >= $slideList.length 【因为$slideList下一共就5个，最大索引就是4啊~】，我们就把stepIndex设置成1【1是第二张图片的索引啊~】，同时把$wrapper的left值设置为0。
+    if (stepIndex >= $slideList.length) {
       stepIndex = 1;
+      $wrapper.css({
+        left: 0
+      })
     }
-    wrapper.animate({
+    // 2. 让wrapper动起来实现轮播
+    $wrapper.finish().animate({
       left: -stepIndex * 1000
-    }, 200); // 200 是从当前切换到下一张的动画时间 interval是间隔多久切换一次
-
-    // -> 每一次运动完成需要让焦点跟着切换
-    changeFocus();
+    }, 200);
+    changeFocus()
   }
 
-  // changeFocus: 让焦点跟着轮播图切换而切换（运动到克隆的这一张的时候，也需要让第一个li有选中的样式
-
+  // changeFocus 处理轮播时焦点的问题
   function changeFocus() {
-    // 当轮播图运动到最后一张（克隆的第一张，我们需要让第一个li有选中样式，之所以使用tempIndex是因为stepIndex对轮播图切换起着很大作用，不能轻易修改）
-    let tempIndex = stepIndex;
-    tempIndex === slideList.length - 1
-      ? tempIndex = 0
-      : null;
-    focusList.eq(tempIndex)
-      .addClass('active')
-      .siblings()
-      .removeClass('active');
-  }
-
-// queryDate：获取数据
-function queryData(onSuccess, onError) {
-  $.ajax({
-    url: 'json/banner.json',
-    method: 'GET',
-    dataType: 'json',
-    async: false,
-    success: onSuccess,
-    error: onError
-  })
-}
-
-// bindHTML：数据绑定
-function bindHTML(data) {
-  let strSlide = ``;
-  let strFocus = ``;
-  data.forEach((item, index) => {
-    let {
-      img = 'img/banner1.jpg',
-      desc = '珠峰培训'
-    } = item;
-    strSlide += `<div class="slide">
-        <img src="${img}" alt="${desc}">
-      </div>`;
-
-    strFocus += `<li class="${index === 0 ? 'active' : '' }"></li>`
-  });
-
-  // 将第一张克隆一份放到最后
-  strSlide += `<div class="slide">
-        <img src="${data[0].img}" alt="${data[0].desc}">
-      </div>`
-
-  // 插入到容器中
-  wrapper.html(strSlide);
-  focus.html(strFocus);
-
-  // -> 获取所有的slide和li
-  slideList = $('.slide');
-  focusList = $('.focus > li');
-
-  // -> 根据slide的个数动态计算wrapper的宽度
-  wrapper.css({
-    width: slideList.length * 1000
-  })
-
-}
-
-// handleContainer 鼠标进入后停止自动轮播，离开后开始自动轮播；
-function handleContainer() {
-  container.on('mouseenter', function () {
-    clearInterval(autoTimer);
-    arrowLeft.css({
-      display: 'block'
-    });
-    arrowRight.css({
-      display: 'block'
-    })
-  }).on('mouseleave', function () {
-    clearInterval(autoTimer);
-    autoTimer = setInterval(autoMove, interval);
-    arrowLeft.css({
-      display: 'none'
-    });
-    arrowRight.css({
-      display: 'none'
-    })
-  });
-}
-
-// 点击箭头切换轮播
-
-function handleArrow() {
-  arrowRight.click(autoMove);
-  arrowLeft.click(function () {
-    stepIndex--;
-    if (stepIndex < 0) {
-      // 如果索引减减后小于0，说明当前已经是第一张，不能向右运动了，如果再减就该展示最后一张图片了（这里的最后一张应该是真实的最后一张图，而不是我们复制出来的那个），最后一张在slide中的位置是倒数第二，即索引位置是 length -2
-      wrapper.css({
-        left: -(slideList.length - 1) * 1000
-      });
-      stepIndex = slideList.length - 2;
+    // 当轮播图轮播时，下面的小焦点也要跟着动，
+    // 当展示第一个时，第一个小点有选中样式（第一个小点的索引是0），
+    // 当第二个图片展示时，我们需要选中第二个（第二个小点的索引是1），
+    // 当第三个图片展示时，我们需要选中第三个（第二个小点的索引是2），
+    // ....
+    // 综上可以发现，stepIndex是不是就代表这当前轮播图的索引，这个索引应该和下面的小点是对应的。但是，但是，但是，当轮播到最后一张时，这最后一张时我们复制出来的第一个图，所以展示的是第一个图，对应着下面的小点应该选中第一个；
+    let tempIndex = stepIndex; // stepIndex 记录的是当前正则展示的图片，控制着轮播顺序，所以我们不能随意修改它，而是应该另选一个tempIndex赋值一份stepIndex的值（基本数据类型复制的是值）
+    if (tempIndex >= $slideList.length - 1) {
+      tempIndex = 0;
     }
-    wrapper.finish().animate({
-      left: -stepIndex * 1000
-    }, 200);
-    changeFocus();
-  })
-}
-
-// 点击焦点切换
-function handleFocus() {
-  focusList.on('click', function () {
-    // 给每个焦点绑定点击事件，点击的是谁，就让stepIndex的值等于谁的索引，然后运动到这里
-    let focusIndex = $(this).index();
-    stepIndex = index;
-    wrapper.finish().animate({
-      left: -focusIndex * 1000
-    }, 200);
-    changeFocus();
-  })
-}
-
-
-//
-// queryData(bindHTML);
-// handleContainer();
-// handleArrow();
-// handleFocus();
-// autoTimer = setInterval(autoMove, interval)
-
-return {
-  init() {
-    queryData(bindHTML);
-    handleContainer();
-    handleArrow();
-    handleFocus();
-    autoTimer = setInterval(autoMove, interval)
+    $focusList.eq(tempIndex).addClass('active').siblings().removeClass('active')
   }
-}
 
-})
-();
+  // handleContainer 处理鼠标悬停在轮播图上时停止轮播，并且展示左右箭头
+  function handleContainer() {
+    $container.on('mouseenter', function () {
+      // 停止轮播就是清除定时器
+      clearInterval(autoTimer);
+      // 将左右箭头设置为display: block
+      $arrowLeft.css({
+        display: 'block'
+      });
+      $arrowRight.css({
+        display: 'block'
+      });
+    }).on('mouseleave', function () {
+      // 重新启动轮播，即重新开启定时器
+      autoTimer = setInterval(autoMove, interval);
+      // 隐藏两个箭头
+      $arrowLeft.css({
+        display: 'none'
+      });
+      $arrowRight.css({
+        display: 'none'
+      });
+      // 隐藏两个箭头简单写法
+      // ;[$arrowLeft, $arrowRight].forEach(item => item.css({display: 'none'}));
+    })
+  }
 
+  // handleArrow 点击箭头时切换轮播
+  function handleArrow() {
+    // 点击左面的箭头就是轮播上一张
+    // 轮播上一张就是让stepIndex--，但是减到0的时候就说明到第一张了，再减就是-1了，而此时再播就该播最后一张了（真实图片的最后一张，而不是我们复制出来的那个第一张）；
+    $arrowLeft.on('click', function () {
+      stepIndex--;
+      if (stepIndex < 0) {
+        stepIndex = $slideList.length - 2;
+      }
+      $wrapper.finish().animate({
+        left: -1 * stepIndex * 1000
+      }, 200);
+      changeFocus();
+    });
+    // 点击右面的箭头就是轮播下一张 和自动轮播的效果一样
+    $arrowRight.on('click', autoMove);
+  }
+
+
+  // handleFocus 点击焦点切换轮播图；我们发现焦点的索引就是当前轮播的图片索引，所以我们直接将stepIndex设置为当前焦点的索引，并且让wrapper的left值动画到这个索引对应的值，
+  function handleFocus() {
+    $focusList.on('click', function () {
+      let focusIndex = $(this).index();
+      stepIndex = focusIndex; //
+      $wrapper.finish().animate({
+        left: -1 * focusIndex * 1000
+      });
+      changeFocus()
+    })
+  }
+
+
+  return {
+    init () {
+      // 执行请求+绑定数据
+      queryData(bindHTML);
+
+      // 处理鼠标悬停时停止轮播+离开时重启自动轮播
+      handleContainer();
+
+      // 处理左右箭头的点击事件
+      handleArrow();
+
+      // 处理点击焦点切换轮播
+      handleFocus();
+
+      // 开启自动轮播；
+      autoTimer = setInterval(autoMove, interval);
+    }
+  }
+})();
 bannerRender.init();
